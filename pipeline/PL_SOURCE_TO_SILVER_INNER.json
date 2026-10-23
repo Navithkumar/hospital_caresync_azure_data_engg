@@ -185,6 +185,14 @@
 						"landing_timestamp": {
 							"value": "@variables('timestamp')",
 							"type": "Expression"
+						},
+						"load_type": {
+							"value": "@activity('READ TABLE DETAILS').output.firstRow.load_type",
+							"type": "Expression"
+						},
+						"merge_keys": {
+							"value": "@coalesce(\n    activity('READ TABLE DETAILS').output.firstRow.merge_keys,''\n)",
+							"type": "Expression"
 						}
 					}
 				},
@@ -198,7 +206,7 @@
 				"type": "Script",
 				"dependsOn": [
 					{
-						"activity": "LANDING NOTEBOOK SILVER",
+						"activity": "Check load type and update watermark",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -303,6 +311,56 @@
 									"value": "@activity('Read Watermark').output.firstRow.watermark_value",
 									"type": "Expression"
 								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Check load type and update watermark",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "LANDING NOTEBOOK SILVER",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@not(\n    equals(activity('READ TABLE DETAILS').output.firstRow.load_type,'FULL')\n)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "update watermark",
+							"type": "Script",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"linkedServiceName": {
+								"referenceName": "LS_AzureSqlDatabase",
+								"type": "LinkedServiceReference"
+							},
+							"typeProperties": {
+								"scripts": [
+									{
+										"type": "Query",
+										"text": {
+											"value": "UPDATE ctrl.watermark \nSET watermark_value = SYSDATETIME() \nwhere table_id = @{pipeline().parameters.table_id};",
+											"type": "Expression"
+										}
+									}
+								],
+								"scriptBlockExecutionTimeout": "02:00:00"
 							}
 						}
 					]
