@@ -71,7 +71,7 @@
 					"source": {
 						"type": "PostgreSqlV2Source",
 						"query": {
-							"value": "SELECT * from PUBLIC.@{activity('READ TABLE DETAILS').output.firstRow.source_table_name} \n@{\n    if(equals(activity('READ TABLE DETAILS').output.firstRow.load_type,'Full'),'',\n    concat(\n        'WHERE ',activity('READ TABLE DETAILS').output.firstRow.watermark_column,'>','''',variables('watermark value'),''''))\n}",
+							"value": "\n@concat(\n    'SELECT * FROM PUBLIC.',\n    activity('READ TABLE DETAILS').output.firstRow.source_table_name,\n    if(\n        equals(activity('READ TABLE DETAILS').output.firstRow.load_type, 'Full'),\n        '',\n        concat(\n            ' WHERE ',\n            activity('READ TABLE DETAILS').output.firstRow.watermark_column,\n            ' > ',\n            '''',\n            variables('watermark value'),\n            ''''\n        )\n    )\n)\n",
 							"type": "Expression"
 						},
 						"queryTimeout": "02:00:00"
@@ -257,7 +257,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"expression": {
-						"value": "@not(\n    equals(activity('READ TABLE DETAILS').output.firstRow.load_type,'FULL')\n)",
+						"value": "@not(equals(activity('READ TABLE DETAILS').output.firstRow.load_type,'FULL'))",
 						"type": "Expression"
 					},
 					"ifTrueActivities": [
